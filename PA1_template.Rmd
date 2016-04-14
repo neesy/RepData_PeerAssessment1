@@ -1,25 +1,101 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: "Denise Olson"
+date: "April 13, 2016"
+output: html_document
 ---
 
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-## Loading and preprocessing the data
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
+```{r, echo=TRUE}
+## set the environment and libraries necessary
+library(dplyr)
+library(ggplot2)
+library(chron)
+setwd("C:/Users/Denise/Documents/R/Coursera")
+```
 
+```{r, echo=TRUE}
+## Step 1 read data
+if (!exists("activity")) {
+  tf <- tempfile()
+  download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",tf)
+  activity <- read.csv(unz(tf,"activity.csv"))
+  unlink(tf)
+}
+```
 
-## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+## Step 2 Create histogram of raw data for total steps
+activity$interval <- factor(activity$interval)
+activity$date <- as.Date(activity$date)
+step_total <- summarize(group_by(activity, date), stepsum=sum(steps))
+par(mfrow=c(1,1))
+hist(step_total$stepsum, xlab="Total Steps", main="Histogram: Total Steps", col="blue")
+dev.copy(png, file="plot1c1.png", width = 840, height = 480)
+dev.off()
+```
 
+```{r, echo=TRUE}
+## Step 3 - print mean and median of total steps by date
+step_mean <- round(mean(step_total$stepsum, na.rm=TRUE),2)
+step_med <- median(step_total$stepsum, na.rm=TRUE)
+print(c("mean=",step_mean), quote=FALSE)
+print(c("median=",step_med), quote=FALSE)
+```
 
+```{r, echo=TRUE}
+## Step 4 - create time series of mean by 5 minute interval
+sub_activity <- activity[complete.cases(activity), ]
+interval_step <- aggregate(steps ~ interval, data=sub_activity, mean)
+plot.ts(interval_step$steps, xlab="5 min intervals",ylab="Avg Steps",main="Time Series: Avg Steps by Interval", col="red")
+dev.copy(png,file="plot2c1.png", width = 840, height = 480)
+dev.off()
+```
 
-## What is the average daily activity pattern?
+```{r, echo=TRUE}
+## Step 5 - calculate with maximum mean value for steps
+max_interval <- interval_step[interval_step$steps==max(interval_step$steps),]
+max_interval[1]
+```
 
+```{r, echo=TRUE}
+## Step 6 - Impute missing data (used average for the interval)
+na_activity <- activity[!complete.cases(activity),]
+mrg_data <- merge(na_activity, interval_step, by.x="interval", by.y="interval")
+mrg_data <- mrg_data[, c("steps.y","date","interval")]
+names(mrg_data) <- c("steps","date","interval")
+mrg_data <- as.data.frame(mrg_data)
+na_vect <- rep("imputed",nrow(mrg_data))
+mrg_data <- cbind(na_vect,mrg_data)
 
+na_vect <- rep("actual",nrow(sub_activity))
+sub_activity <- cbind(na_vect,sub_activity)
 
-## Imputing missing values
+comb_activity <- rbind(sub_activity,mrg_data)
+```
 
+```{r, echo=TRUE}
+## Step 7 - Histogram of # of steps taken each day after missing values are imputed
+step_comb <- summarize(group_by(comb_activity, date), stepsum=sum(steps))
+hist(step_comb$stepsum, xlab="Total Steps", main="Histogram: Total Steps (w/imputed)", col="blue")
+dev.copy(png, file="plot3c1.png", width = 840, height = 480)
+dev.off()
+```
 
-
-## Are there differences in activity patterns between weekdays and weekends?
+```{r, echo=TRUE}
+## Step 8 - Panel plot comparing the average # of steps taken per by interval on weekends and weekdays
+## using imputed values for missing
+wkend <- ifelse(is.weekend(comb_activity$date),"weekend","weekday")
+comb_activity <- cbind(wkend,comb_activity)
+interval_comb <- comb_activity %>% group_by(interval,wkend) %>% summarize_each(funs(mean),steps)
+weekend <- interval_comb[interval_comb$wkend=="weekend",]
+weekday <- interval_comb[interval_comb$wkend=="weekday",]
+par(mfrow=c(2,1))
+plot.ts(weekend$steps, xlab="5 min intervals",ylab="Avg Steps",main="WEEKEND Time Series: Avg Steps by Interval", col="red")
+plot.ts(weekday$steps, xlab="5 min intervals",ylab="Avg Steps",main="WEEKDAY Time Series: Avg Steps by Interval", col="blue")
+dev.copy(png, file ="plot4c1.png", width = 840, height = 480)
+dev.off()
+```
