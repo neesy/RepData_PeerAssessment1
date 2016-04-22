@@ -6,6 +6,7 @@ output: html_document
 ---
 
 This is an R Markdown document for Project 1 - Reproducible Research. 
+When reviewing my code, please look at PA1_template.html which contains the graphs and code. This .md file will only contain code.
 
 Chunk 1: contains the code to load the appropriate libraries 
 ```{r, echo=TRUE}
@@ -46,7 +47,7 @@ print(c("mean=",step_mean), quote=FALSE)
 print(c("median=",step_med), quote=FALSE)
 ```
 
-Chunk 5: This section summarizes data by time interval and creates a time series plot by interval showing the average steps by interval.
+Chunk 5: This section summarizes data by time interval and creates a time series plot by interval showing the average steps by interval. 
 ```{r, echo=TRUE}
 ## Step 4 - create time series of mean by 5 minute interval
 sub_activity <- activity[complete.cases(activity), ]
@@ -88,7 +89,7 @@ dev.copy(png, file="plot3c1.png", width = 840, height = 480)
 dev.off()
 ```
 
-Chunk 9: This section creates a panel plot of steps taken by weekend and weekday groups.
+Chunk 9: This section creates a panel plot of steps taken by weekend and weekday groups. By comparing the results of the 2 plots we can see how the two sets compare.
 ```{r, echo=TRUE, fig.height=6}
 ## Step 8 - Panel plot comparing the average # of steps taken per by interval on weekends and weekdays
 ## using imputed values for missing
